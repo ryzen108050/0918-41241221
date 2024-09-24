@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>剪刀石頭布遊戲</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        body {
+            text-align: center; /* 置中對齊整個頁面內容 */
+            position: relative; /* 相對定位以便於絕對定位的彩帶 */
+            overflow: hidden; /* 隱藏超出邊界的內容 */
+            transition: transform 0.1s; /* 為震動效果添加過渡 */
+        }
+        .button {
+            position: relative; /* 相對定位以便於絕對定位的文字 */
+            width: 100px; /* 按鈕寬度 */
+            height: 100px; /* 按鈕高度 */
+            margin: 10px;
+            border: none; /* 去掉邊框 */
+            background: transparent; /* 透明背景 */
+            cursor: pointer; /* 滑鼠懸停時變為手型 */
+        }
+        .button img {
+            width: 100%; /* 圖片填滿按鈕 */
+            height: 100%; /* 圖片填滿按鈕 */
+        }
+        #message {
+            margin-top: 20px; /* 訊息與按鈕的距離 */
+            font-size: 24px; /* 訊息字體大小 */
+            color: #333; /* 訊息顏色 */
+        }
+        .win {
+            color: #ff6347; /* 獲勝時的字體顏色（番茄色） */
+            font-weight: bold; /* 加粗 */
+        }
+        .draw {
+            color: #007bff; /* 平局的字體顏色（藍色） */
+        }
+        .confetti {
+            position: absolute;
+            top: -50px; /* 初始位置在上方 */
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+            animation: fall 1.5s forwards;
+        }
+        @keyframes fall {
+            0% { top: -50px; opacity: 1; }
+            100% { top: 100vh; opacity: 0; }
+        }
+        #leaderboard {
+            margin-top: 20px; /* 排行榜與其他內容的距離 */
+            font-size: 20px; /* 排行榜字體大小 */
+        }
+        .stick-figure {
+            position: absolute;
+            bottom: 50px; /* 火柴人初始位置 */
+            font-size: 40px; /* 火柴人大小 */
+            opacity: 0; /* 初始透明度 */
+            animation: jump 0.5s forwards; /* 跳舞動畫 */
+        }
+        @keyframes jump {
+            0%, 100% { bottom: 50px; opacity: 1; }
+            50% { bottom: 100px; } /* 跳起的高度 */
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <h1>剪刀石頭布遊戲</h1>
+    <button class="button" onclick="playGame('石頭')">
+        <img src="https://class.vbird.tw/~4070c009/web2/images/rock.png" alt="石頭">
+    </button>
+    <button class="button" onclick="playGame('剪刀')">
+        <img src="https://class.vbird.tw/~4090c009/web2/images/scissors.png" alt="剪刀">
+    </button>
+    <button class="button" onclick="playGame('布')">
+        <img src="https://class.vbird.tw/~4070c018/web2/images/paper.png" alt="布">
+    </button>
+    
+    <div id="message"></div>
+    <div id="leaderboard">
+        <h2>排行榜</h2>
+        <p>勝利次數: <span id="wins">0</span></p>
+    </div>
+
+    <!-- 這裡是新的勝利音效，替換為你下載的音效文件 -->
+    <audio id="winSound" src="#音效素材 002 遊戲失敗.mp3"></audio>
+    <audio id="drawSound" src="🏆通關音效＃shorts.mp3"></audio>
+    <audio id="loseSound" src="地鐵跑酷  購物失敗音效.mp3"></audio>
+
+
+    <script>
+        let winCount = 0; // 玩家獲勝次數
+
+        function playGame(playerChoice) {
+            const choices = ['石頭', '剪刀', '布'];
+            const computerChoice = choices[Math.floor(Math.random() * choices.length)];
+            let result;
+            let resultClass;
+
+            if (playerChoice === computerChoice) {
+                result = '平局！';
+                resultClass = 'draw';
+                playSound('drawSound'); // 播放平局音效
+            } else if (
+                (playerChoice === '石頭' && computerChoice === '剪刀') ||
+                (playerChoice === '剪刀' && computerChoice === '布') ||
+                (playerChoice === '布' && computerChoice === '石頭')
+            ) {
+                result = '你獲勝了！';
+                resultClass = 'win';
+                winCount++;
+                updateLeaderboard();
+                shakePage();
+                createConfetti();
+                dance();
+                playSound('winSound'); // 播放獲勝音效
+
+                if (winCount === 3) {
+                    showAlert('你是勝利者！');
+                    resetGame();
+                }
+            } else {
+                result = '電腦獲勝了！';
+                resultClass = 'lose';
+                playSound('loseSound'); // 播放失敗音效
+            }
+
+            document.getElementById('message').innerHTML = 
+                '你選擇了：' + playerChoice + '<br>' + 
+                '電腦選擇了：' + computerChoice + '<br>' + 
+                '<span class="' + resultClass + '">' + result + '</span>';
+        }
+
+        function playSound(soundId) {
+            const sound = document.getElementById(soundId);
+            sound.currentTime = 0; // 重置播放時間
+            sound.play(); // 播放音效
+        }
+
+        function showAlert(message) {
+            Swal.fire({
+                title: message,
+                icon: 'success',
+                confirmButtonText: '好！'
+            });
+        }
+
+        function shakePage() {
+            document.body.style.animation = 'shake 0.5s';
+            setTimeout(() => {
+                document.body.style.animation = '';
+            }, 500);
+        }
+
+        function createConfetti() {
+            const colors = ['#ff0', '#0f0', '#00f', '#f00', '#ff7f0e'];
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 1500);
+            }
+        }
+
+        function updateLeaderboard() {
+            document.getElementById('wins').textContent = winCount;
+        }
+
+        function dance() {
+            const leftFigures = createFigures('left');
+            const rightFigures = createFigures('right');
+
+            const allFigures = [...leftFigures, ...rightFigures];
+            allFigures.forEach((figure, index) => {
+                setTimeout(() => {
+                    figure.style.animation = 'jump 0.5s forwards';
+                }, index * 300);
+            });
+
+            setTimeout(() => {
+                allFigures.forEach(figure => figure.remove());
+            }, 2400);
+        }
+
+        function createFigures(side) {
+            const figures = [];
+            const count = 10;
+            const leftOffset = side === 'left' ? '-50vw' : '50vw';
+
+            for (let i = 0; i < count; i++) {
+                const stickFigure = document.createElement('div');
+                stickFigure.classList.add('stick-figure');
+                stickFigure.textContent = '🕺';
+                stickFigure.style.left = `${(i + 1) * 100 / (count + 1)}%`;
+                stickFigure.style.transform = `translateX(${leftOffset})`;
+                stickFigure.style.bottom = (i % 2 === 0 ? 100 : 0) + 'px';
+                document.body.appendChild(stickFigure);
+                figures.push(stickFigure);
+            }
+
+            return figures;
+        }
+
+        function resetGame() {
+            winCount = 0;
+            updateLeaderboard();
+        }
+    </script>
+</body>
+</html>
